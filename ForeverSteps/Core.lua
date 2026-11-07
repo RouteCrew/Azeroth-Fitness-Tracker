@@ -5,6 +5,7 @@ function C.New(db, day)
     db = type(db) == "table" and db or {}
     db.total = tonumber(db.total) or 0
     db.today = tonumber(db.today) or 0
+    db.runSeconds = math.max(0, tonumber(db.runSeconds) or 0)
     db.stride = tonumber(db.stride) or 2.5
     if db.stride < 0.5 or db.stride > 5 then db.stride = 2.5 end
     db.goal = tonumber(db.goal) or 10000
@@ -26,7 +27,10 @@ function C.Add(db, day, speed, elapsed, eligible)
     -- Ignore stalls / loading gaps rather than inventing movement.
     if not eligible or elapsed <= 0 or elapsed > 0.5 or speed <= 0 then return end
     local before = db.today
-    local steps = speed * elapsed / db.stride
+    local distance = speed * elapsed
+    local steps = distance / db.stride
+    -- Accumulate time for each measured segment, using its actual speed.
+    db.runSeconds = db.runSeconds + distance / speed
     db.today = db.today + steps
     db.total = db.total + steps
     return before < db.goal and db.today >= db.goal
@@ -50,4 +54,14 @@ function C.Complete(db)
         end
     end
     return true, unlocked
+end
+
+function C.FormatTime(seconds)
+    local whole = math.floor(math.max(0, seconds))
+    local days = math.floor(whole / 86400)
+    local hours = math.floor(whole / 3600) % 24
+    local minutes = math.floor(whole / 60) % 60
+    local clock = string.format("%02d:%02d:%02d", hours, minutes, whole % 60)
+    if days > 0 then return days .. "d " .. clock end
+    return clock
 end

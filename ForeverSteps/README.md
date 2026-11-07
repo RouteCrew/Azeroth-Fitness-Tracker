@@ -1,4 +1,4 @@
-# Azeroth Fitness Tracker 1.3.1
+# Azeroth Fitness Tracker 1.4.0
 
 Deutsches Schrittzähler-Addon für WoW: Forever 1.60.1 (Interface 16001).
 
@@ -83,3 +83,14 @@ Technische Referenzen:
 - `/aft` öffnet direkt dasselbe Einstellungsmenü wie das Zahnrad. Ein verborgenes Hauptfenster wird dabei eingeblendet. Im Kampf bleiben Fenster und Einstellungen verborgen.
 - Gildennachrichten beginnen mit `AFT: `. Sie werden weiterhin nur beim Erreichen des Tagesziels durch neue Schritte ausgelöst, maximal einmal pro Tag.
 - Die bisherigen Befehle bleiben verfügbar. Der technische Ordner und die gespeicherten Charakterdaten heißen weiterhin ForeverSteps, damit vorhandene Zähler und Einstellungen erhalten bleiben.
+
+
+## Time wasted Running (TWR), ab Version 1.4.0
+
+Das Hauptfenster zeigt die gespeicherte Gesamtlaufzeit pro Charakter als `HH:MM:SS`, ab einem Tag als `Nd HH:MM:SS`. Ein Tooltip erklärt die Anzeige. TWR bleibt auch bei eingeklappten Erfolgen und ausgeblendetem Gesamtschrittzähler sichtbar.
+
+Für jedes gültige Bewegungsintervall gilt: Strecke = aktuelle Geschwindigkeit × Intervallzeit; TWR-Zuwachs = Strecke / aktuelle Geschwindigkeit. Dadurch zählen langsames Gehen und schnelles Laufen jeweils mit ihrer tatsächlichen gemessenen Dauer. Die Schrittlänge beeinflusst TWR nicht.
+
+Es gelten dieselben Ausschlüsse wie beim Schrittzähler: Stillstand, Reiten, Taxi, Fahrzeuge, Fliegen, Schwimmen, Fallen, Tot-/Geistzustand, manuelle Pause, Ladeunterbrechungen und gesperrte Bewegungsdaten werden nicht angerechnet. Ausblenden des Fensters stoppt die Messung nicht. TWR misst geschätzte Laufzeit, keine Zeitersparnis gegenüber Reiten und keine reale Fitnessaktivität.
+
+Bestehende Schritte und Einstellungen bleiben erhalten. TWR beginnt beim Update bei null, da frühere Schrittstände keine verlässlichen Geschwindigkeits- und Zeitdaten enthalten. Der Gesamtzeitstand überlebt Tageswechsel, Reload und normales Ausloggen.
