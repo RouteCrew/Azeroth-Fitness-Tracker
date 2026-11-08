@@ -19,7 +19,9 @@ for locale in locales:
 locale_source = (root/'ForeverSteps/Locale.lua').read_text()
 base = locale_source.split('dictionaries.enUS = {',1)[1].split('\n}',1)[0]
 keys = set(re.findall(r'^    (\w+) = ', base, re.M))
-for name in ['Core.lua','ForeverSteps.lua']:
+extra = (root/'ForeverSteps/LocaleExtras.lua').read_text().split('extra.enUS = {',1)[1].split('\n}',1)[0]
+keys |= set(re.findall(r'^    (\w+) = ', extra, re.M))
+for name in ['Core.lua','Features.lua','Settings.lua','ForeverSteps.lua']:
     source = (root/'ForeverSteps'/name).read_text()
     used = set(re.findall(r'\bL\.(\w+)', source))
     assert used <= keys, (name, used - keys)

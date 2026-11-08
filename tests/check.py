@@ -11,7 +11,10 @@ code='''
 local NS={}
 function GetLocale() return os.getenv('AFT_TEST_LOCALE') or 'deDE' end
 assert(loadfile('ForeverSteps/Locale.lua'))('ForeverSteps',NS)
+assert(loadfile('ForeverSteps/LocaleExtras.lua'))('ForeverSteps',NS)
 assert(loadfile('ForeverSteps/Core.lua'))('ForeverSteps',NS)
+assert(loadfile('ForeverSteps/Features.lua'))('ForeverSteps',NS)
+assert(loadfile('ForeverSteps/Settings.lua'))('ForeverSteps',NS)
 local c=NS.Core
 local db=c.New(nil,'2026-11-07')
 for i=1,100 do c.Add(db,'2026-11-07',7,0.1,true) end
@@ -39,6 +42,7 @@ function methods:GetFrameLevel() return 1 end
 function methods:GetFont() return self.font or 'font',self.fontSize or 12,'' end
 function methods:GetUnboundedStringWidth() return #(self.text or '')*6 end
 function methods:SetText(t) self.text=t end
+function methods:GetText() return self.text or "" end
 function methods:SetFont(f,size,flags) self.font=f; self.fontSize=size end
 function methods:SetAlpha(a) self.alpha=a end
 function methods:IsShown() return self.shown end
@@ -58,7 +62,7 @@ methods.CreateTexture=methods.CreateFontString
 setmetatable(methods,{__index=function(_,k) if k:match("^[A-Z]") then return noop end end})
 local named={}
 function CreateFrame(kind,name) local f=setmetatable({scripts={}}, {__index=methods}); frames[#frames+1]=f; if name then named[name]=f end; return f end
-UIParent={}; SlashCmdList={}; STANDARD_TEXT_FONT='font'
+UIParent=setmetatable({width=1920,height=1080},{__index=methods}); SlashCmdList={}; STANDARD_TEXT_FONT='font'
 function date() return '2026-11-07' end
 local mounted=false
 function IsMounted() return mounted end
@@ -151,12 +155,12 @@ d.scripts.OnEvent(d,'PLAYER_REGEN_DISABLED')
 d.scripts.OnEvent(d,'PLAYER_REGEN_ENABLED'); assert(not panel.shown)
 print('PASS: corner scaling, lock, drag cancellation, combat and manual visibility')
 SlashCmdList.FOREVERSTEPS('zeigen')
-assert(panel:GetHeight()==282)
+assert(panel:GetHeight()==386)
 assert(not panel.badges[1].shown)
 panel.achToggle.scripts.OnClick()
-assert(panel:GetHeight()==402 and panel.badges[1].shown)
+assert(panel:GetHeight()==506 and panel.badges[1].shown)
 panel.achToggle.scripts.OnClick()
-assert(panel:GetHeight()==282 and not panel.badges[1].shown)
+assert(panel:GetHeight()==386 and not panel.badges[1].shown)
 panel.gear.scripts.OnClick(); assert(panel.settings.shown)
 local options=panel.settings
 options.opacity.scripts.OnValueChanged(options.opacity,50)
@@ -172,7 +176,7 @@ d.scripts.OnEvent(d,'PLAYER_REGEN_DISABLED'); assert(not options.shown)
 d.scripts.OnEvent(d,'PLAYER_REGEN_ENABLED'); assert(not options.shown)
 d.scripts.OnEvent(d,'ADDON_LOADED','ForeverSteps')
 panel=named.ForeverStepsFrame
-assert(panel:GetHeight()==282 and panel.alpha==0.5)
+assert(panel:GetHeight()==386 and panel.alpha==0.5)
 assert(ForeverStepsDB.fontStyle==(NS.nativeFontOnly and 1 or 2) and ForeverStepsDB.borderStyle==2)
 print('PASS: collapse, settings, fonts, opacity, total visibility, persistence')
 SlashCmdList.FOREVERSTEPS('ausblenden')
@@ -234,6 +238,7 @@ assert(panel.totalLabel.text==NS.L.TOTAL)
 assert(panel.badges[1].text:find(NS.L.ACH1,1,true))
 assert(panel.settings.fontButton.text:find(NS.L.FONT,1,true))
 print('PASS: locale '..NS.locale..', complete translations, guild byte limits, English aliases')
+assert(loadfile('tests/features.lua'))(NS,ForeverStepsDB,d,panel,sent)
 print('PASS: core cases, syntax, UI/event mocks, exclusions, secrets, commands')
 '''
 err=lib.luaL_loadstring(L,code.encode()) or lib.lua_pcallk(L,0,0,0,0,None)

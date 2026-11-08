@@ -12,8 +12,11 @@
 ## Notes-zhCN: 每日步数、总步数和跑步时间。
 ## Notes-zhTW: 每日步數、總步數與跑步時間。
 ## Author: Custom
-## Version: 1.5.0
+## Version: 1.6.0
 ## SavedVariablesPerCharacter: ForeverStepsDB
 Locale.lua
+LocaleExtras.lua
 Core.lua
+Features.lua
+Settings.lua
 ForeverSteps.lua

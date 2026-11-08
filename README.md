@@ -1,6 +1,12 @@
 # Azeroth Fitness Tracker
 
-Mehrsprachiges Schrittzähler-Addon für WoW: Forever 1.60.1 (Interface 16001), Version 1.5.0.
+Mehrsprachiges Schrittzähler-Addon für WoW: Forever 1.60.1 (Interface 16001), Version 1.6.0.
+
+## Neu in 1.6.0
+
+Eigenes Einstellungsmenü mit vier Seiten, bearbeitbare Gildensprüche samt Platzhalter-Vorschau, eigene Tagesziele, konfigurierbare Meilenstein-Farben und ein spielerischer Kalorienzähler pro Rasse.
+
+Vollständige Anleitung: [Einstellungen und neue Funktionen](ForeverSteps/CONFIGURATION.md).
 
 ## Installation
 

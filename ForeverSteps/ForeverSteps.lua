@@ -5,6 +5,20 @@ local active, status, clock, cachedDay = false, L.READY, 0
 local driver = CreateFrame("Frame")
 local inCombat = false
 local resize
+local refresh
+local lastSpell
+local recentFood,foodOrder={},{}
+local knownRace,knownRaceName="Unknown","Unknown"
+local function race()
+    if UnitRace then
+        local ok,name,key=pcall(UnitRace,"player")
+        if ok and not (issecretvalue and (issecretvalue(name) or issecretvalue(key))) then
+            if type(key)=="string" then knownRace=key end
+            if type(name)=="string" then knownRaceName=name end
+        end
+    end
+    return knownRace,knownRaceName
+end
 local function day() return date("%Y-%m-%d") end
 local function number(n)
     local s = tostring(math.floor(n))
@@ -96,6 +110,7 @@ local function appearance()
     end
     panel.total:SetShown(db.showTotal ~= false)
     panel.totalLabel:SetShown(db.showTotal ~= false)
+    panel.twr:SetShown(db.showTWR~=false);panel.twrLabel:SetShown(db.showTWR~=false);panel.twrInfo:SetShown(db.showTWR~=false)
     fitLabels(panel)
 end
 local function layoutAchievements()
@@ -103,7 +118,13 @@ local function layoutAchievements()
     local effective=panel:GetEffectiveScale()
     local left,top=panel:GetLeft()*effective,panel:GetTop()*effective
     local collapsed=db.achCollapsed ~= false
-    panel:SetHeight(collapsed and 282 or 402)
+    local header=270+(db.showCalories~=false and 72 or 0)
+    panel:SetHeight(header+(collapsed and 44 or 164))
+    panel.achTitle:ClearAllPoints();panel.achTitle:SetPoint("TOPLEFT",44,-header)
+    panel.achToggle:ClearAllPoints();panel.achToggle:SetPoint("TOPLEFT",20,-header+5)
+    for i,t in ipairs(panel.badges) do t:ClearAllPoints();t:SetPoint("TOPLEFT",22,-header-4-i*18) end
+    panel.calTitle:SetShown(db.showCalories~=false);panel.calBar:SetShown(db.showCalories~=false);panel.calSummary:SetShown(db.showCalories~=false)
+
     for _, text in ipairs(panel.badges) do text:SetShown(not collapsed) end
     panel.achToggle:SetText(collapsed and "+" or "-")
     panel.hint:ClearAllPoints()
@@ -113,70 +134,28 @@ local function layoutAchievements()
     savePosition()
 end
 local function buildSettings()
-    local settings=CreateFrame("Frame",nil,panel,"BackdropTemplate")
-    panel.settings=settings
-    settings:SetSize(278,284); settings:SetPoint("TOP",panel,"TOP",0,-45)
-    settings:SetFrameLevel(panel:GetFrameLevel()+20)
-    settings:SetClampedToScreen(true); settings:EnableMouse(true)
-    settings:SetIgnoreParentAlpha(true)
-    settings:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background",edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border",tile=true,tileSize=32,edgeSize=24,insets={left=6,right=6,top=6,bottom=6}})
-    settings:SetBackdropColor(0.07,0.05,0.025,1)
-    label(settings,"GameFontNormalLarge",18,-20,L.SETTINGS)
-    local close=CreateFrame("Button",nil,settings,"UIPanelCloseButton")
-    close:SetPoint("TOPRIGHT",-4,-4); close:SetScript("OnClick",function() settings:Hide() end)
-    local opacityLabel=label(settings,"GameFontNormal",20,-55,"")
-    local slider=CreateFrame("Slider",nil,settings,"BackdropTemplate")
-    settings.opacity=slider
-    slider:SetOrientation("HORIZONTAL"); slider:SetPoint("TOPLEFT",22,-80); slider:SetSize(234,16)
-    slider:SetMinMaxValues(0,75); slider:SetValueStep(5); slider:SetObeyStepOnDrag(true)
-    slider:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8"})
-    slider:SetBackdropColor(0.25,0.2,0.12,1)
-    slider:SetThumbTexture("Interface\\Buttons\\UI-SliderBar-Button-Horizontal")
-    opacityLabel:SetText(L.TRANSPARENCY..(db.transparency or 0).." %")
-    slider:SetValue(db.transparency or 0)
-    slider:SetScript("OnValueChanged",function(_,value)
-        db.transparency=math.floor(value+0.5)
-        opacityLabel:SetText(L.TRANSPARENCY..db.transparency.." %")
-        fitText(opacityLabel)
-        appearance()
-    end)
-    local function button(y)
-        local b=CreateFrame("Button",nil,settings,"UIPanelButtonTemplate")
-        b:SetPoint("TOPLEFT",20,y); b:SetSize(238,28)
-        return b
-    end
-    local fontButton=button(-117); settings.fontButton=fontButton
-    fontButton:SetText(L.FONT..(fonts[db.fontStyle or 1] or fonts[1])[1])
-    fontButton:SetScript("OnClick",function(self)
-        db.fontStyle=(db.fontStyle or 1)%#fonts+1
-        self:SetText(L.FONT..fonts[db.fontStyle][1]); appearance()
-    end)
-    local borderButton=button(-153); settings.borderButton=borderButton
-    borderButton:SetText(L.BORDER..borders[db.borderStyle or 1])
-    borderButton:SetScript("OnClick",function(self)
-        db.borderStyle=(db.borderStyle or 1)%#borders+1
-        self:SetText(L.BORDER..borders[db.borderStyle]); appearance()
-    end)
-    local totalButton=button(-189); settings.totalButton=totalButton
-    local function totalText() totalButton:SetText(L.TOTAL_OPTION..(db.showTotal ~= false and L.ON or L.OFF)) end
-    totalText()
-    totalButton:SetScript("OnClick",function()
-        db.showTotal=db.showTotal == false
-        totalText(); appearance()
-    end)
-    label(settings,"GameFontDisableSmall",20,-237,L.SETTINGS_HINT)
-    label(settings,"GameFontDisableSmall",20,-253,L.SAVED_HINT)
-    fitLabels(settings)
-    settings:Hide()
+    panel.settings=NS.CreateSettings(panel,db,{
+        fonts=fonts,borders=borders,number=number,day=day,race=race,lastSpell=function()return lastSpell end,
+        appearance=appearance,layout=layoutAchievements,lock=toggleLock,scale=applyScale,
+        refresh=function()refresh() end,
+        center=function()if not db.locked and not inCombat then stopInteraction();db.position=nil;panel:ClearAllPoints();panel:SetPoint("CENTER") end end,
+    })
 end
-local function refresh()
+refresh=function()
     if not panel then return end
     panel.today:SetText(number(db.today))
     panel.total:SetText(number(db.total))
-    panel.progress:SetValue(math.min(db.today / db.goal, 1))
+    local fraction,r,g,b,nextValue=C.Stage(db)
+    panel.progress:SetValue(fraction);panel.progress:SetStatusBarColor(r,g,b)
+    panel.stage:SetText(nextValue and (L.STAGE_NEXT..number(nextValue)) or L.STAGE_DONE)
+    local left,need,eaten=C.Calories(db,race())
+    panel.calTitle:SetText(L.CAL_LEFT..": "..number(left).." kcal")
+    panel.calBar:SetValue(need>0 and left/need or 0)
+    panel.calSummary:SetText(L.CAL_SUMMARY..number(need).." / "..number(eaten).." kcal")
     panel.goal:SetText(L.DAILY_GOAL .. number(db.goal) .. "  ·  " .. math.floor(db.today / db.goal * 100) .. "%")
     panel.status:SetText(status)
     panel.twr:SetText(C.FormatTime(db.runSeconds))
+    if panel.settings and panel.settings.UpdateLive then panel.settings.UpdateLive() end
     if panel.badges then
         for i, milestone in ipairs(C.Milestones) do
             local earned = db.achievements[milestone[1]]
@@ -195,15 +174,10 @@ local function celebrate()
         if UIErrorsFrame then UIErrorsFrame:AddMessage("AFT: " .. title, 1, 0.82, 0.3, 1) end
     end
     if db.guildMessages ~= false and IsInGuild and IsInGuild() then
-        local jokes = {
-            L.JOKE1,
-            L.JOKE2,
-            L.JOKE3,
-            L.JOKE4,
-        }
+        local jokes = C.Messages(db)
         local send = C_ChatInfo and C_ChatInfo.SendChatMessage or SendChatMessage
         if send then
-            local ok = pcall(send, "AFT: " .. string.format(jokes[math.random(#jokes)], number(db.today)), "GUILD")
+            local ok = pcall(send, C.RenderMessage(db,jokes[math.random(#jokes)],number), "GUILD")
             if not ok then say(L.CHAT_BLOCKED) end
         else say(L.CHAT_MISSING) end
     end
@@ -249,13 +223,16 @@ local function buildUI()
     local bg = panel.progress:CreateTexture(nil,"BACKGROUND")
     bg:SetAllPoints(); bg:SetColorTexture(0.18,0.14,0.08,1)
     panel.goal = label(panel,"GameFontNormalSmall",22,-158,"")
-    panel.status = label(panel,"GameFontHighlightSmall",22,-181,"")
-    local twrLabel=label(panel,"GameFontNormalSmall",22,-207,L.TWR_LABEL)
+    panel.stage = label(panel,"GameFontNormalSmall",22,-177,"")
+    panel.status = label(panel,"GameFontHighlightSmall",22,-198,"")
+    local twrLabel=label(panel,"GameFontNormalSmall",22,-223,L.TWR_LABEL)
+    panel.twrLabel=twrLabel
     twrLabel.aftMaxWidth=132; twrLabel:SetWidth(132)
-    panel.twr = label(panel,"GameFontHighlightSmall",158,-207,"00:00:00")
+    panel.twr = label(panel,"GameFontHighlightSmall",158,-223,"00:00:00")
     panel.twr.aftMaxWidth=120; panel.twr:SetWidth(120); panel.twr:SetJustifyH("RIGHT")
     local twrInfo=CreateFrame("Frame",nil,panel)
-    twrInfo:SetPoint("TOPLEFT",20,-201); twrInfo:SetSize(260,24); twrInfo:EnableMouse(true)
+    panel.twrInfo=twrInfo
+    twrInfo:SetPoint("TOPLEFT",20,-217); twrInfo:SetSize(260,24); twrInfo:EnableMouse(true)
     twrInfo:RegisterForDrag("LeftButton")
     twrInfo:SetScript("OnDragStart",function()
         if not db.locked and not inCombat then resize=nil; panel:StartMoving() end
@@ -273,6 +250,13 @@ local function buildUI()
     end)
     twrInfo:SetScript("OnLeave",function() if GameTooltip then GameTooltip:Hide() end end)
     twrInfo:SetScript("OnHide",function() if GameTooltip then GameTooltip:Hide() end end)
+    panel.calTitle=label(panel,"GameFontNormalSmall",22,-250,"")
+    panel.calBar=CreateFrame("StatusBar",nil,panel)
+    panel.calBar:SetPoint("TOPLEFT",22,-272);panel.calBar:SetSize(256,12)
+    panel.calBar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+    panel.calBar:SetStatusBarColor(0.8,0.35,0.65);panel.calBar:SetMinMaxValues(0,1)
+    local calBG=panel.calBar:CreateTexture(nil,"BACKGROUND");calBG:SetAllPoints();calBG:SetColorTexture(0.18,0.12,0.15,1)
+    panel.calSummary=label(panel,"GameFontDisableSmall",22,-294,"")
     panel.achTitle = label(panel,"GameFontNormal",44,-238,L.ACHIEVEMENTS)
     panel.achToggle=CreateFrame("Button",nil,panel,"UIPanelButtonTemplate")
     panel.achToggle:SetSize(20,20); panel.achToggle:SetPoint("TOPLEFT",20,-233)
@@ -354,11 +338,12 @@ driver:SetScript("OnUpdate", function(_, elapsed)
     local ok, speed, eligible, state = pcall(sample)
     if not ok then speed,eligible,state = 0,false,L.UNAVAILABLE end
     status = state
-    local reached = C.Add(db,cachedDay,speed,elapsed,eligible)
+    local reached,custom = C.Add(db,cachedDay,speed,elapsed,eligible)
+    for _,name in ipairs(custom or {}) do say(L.CUSTOM_DONE..name) end
     if reached then celebrate() end
     if clock >= 0.25 then clock=0; refresh() end
 end)
-driver:SetScript("OnEvent", function(_, event, name)
+driver:SetScript("OnEvent", function(_, event, name, castGUID, spellID)
     if event == "ADDON_LOADED" and name == addon then
         cachedDay=day(); db=C.New(ForeverStepsDB,cachedDay); ForeverStepsDB=db
         inCombat = InCombatLockdown and InCombatLockdown() or false
@@ -367,6 +352,20 @@ driver:SetScript("OnEvent", function(_, event, name)
         active=true; cachedDay=day(); clock=0
         inCombat = InCombatLockdown and InCombatLockdown() or false
         visibility()
+    elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
+        if not db or not active or db.autoFood==false then return end
+        if issecretvalue and (issecretvalue(name) or issecretvalue(spellID) or issecretvalue(castGUID)) then return end
+        if name~="player" or type(spellID)~="number" then return end
+        lastSpell=spellID
+        local ok,kcal=pcall(C.FoodCalories,db,spellID)
+        if not ok or not kcal or kcal<=0 then return end
+        local key=castGUID
+        if not key then key=tostring(spellID)..":"..math.floor(GetTime()) end
+        if recentFood[key] or db.lastFoodGUID==key then return end
+        recentFood[key]=true;foodOrder[#foodOrder+1]=key
+        if #foodOrder>64 then recentFood[table.remove(foodOrder,1)]=nil end
+        db.lastFoodGUID=key
+        C.Day(db,day());C.Meal(db,kcal);refresh()
     elseif event == "PLAYER_REGEN_DISABLED" then inCombat=true; visibility()
     elseif event == "PLAYER_REGEN_ENABLED" then inCombat=false; visibility()
     elseif event == "PLAYER_LEAVING_WORLD" then active=false; stopInteraction() end
@@ -376,6 +375,7 @@ driver:RegisterEvent("PLAYER_ENTERING_WORLD")
 driver:RegisterEvent("PLAYER_LEAVING_WORLD")
 driver:RegisterEvent("PLAYER_REGEN_DISABLED")
 driver:RegisterEvent("PLAYER_REGEN_ENABLED")
+driver:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED","player")
 SLASH_FOREVERSTEPS1="/schritte"
 SLASH_FOREVERSTEPS2="/fsteps"
 SLASH_FOREVERSTEPS3="/fitness"

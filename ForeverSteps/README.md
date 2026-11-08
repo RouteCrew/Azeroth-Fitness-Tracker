@@ -1,4 +1,4 @@
-# Azeroth Fitness Tracker 1.5.0
+# Azeroth Fitness Tracker 1.6.0
 
 Mehrsprachiges Schrittzähler-Addon für WoW: Forever 1.60.1 (Interface 16001).
 
@@ -112,3 +112,8 @@ Die bisherigen deutschen Unterbefehle und `/schritte` bleiben gültig. Die Hilfe
 Für Russisch, Koreanisch und Chinesisch verwendet das Addon ausschließlich die sprachgeeignete WoW-Standardschrift, damit die Zeichen lesbar bleiben. Arial und Morpheus stehen weiterhin in den lateinischen Sprachvarianten zur Auswahl. Längere Texte erhalten eine begrenzte Breite und werden bei Bedarf verkleinert.
 
 Die Texte befinden sich in `ForeverSteps/Locale.lua` und werden vor Zähllogik und Oberfläche geladen. Erweiterte Sprachtests: `python3 tests/check_locales.py` (gleiche Voraussetzungen wie `tests/check.py`). Geprüft werden alle Sprachvarianten, Fallbacks, Schlüsselvollständigkeit, lokalisierte Gildensprüche, Nachrichtenlänge, UI-Aufrufe und bestehende Funktionen. Darstellung und sprachliche Feinheiten wurden nicht in jedem echten Sprachclient geprüft.
+
+
+## Neu in 1.6.0
+
+Neues Menü, Spruch-Editor, eigene Ziele, Meilensteinfarben und Fantasie-Kalorien: siehe [CONFIGURATION.md](CONFIGURATION.md). Diese Anleitung beschreibt die aktuellen Optionen und die Grenzen der Essenserkennung.

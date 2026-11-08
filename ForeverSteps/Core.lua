@@ -17,11 +17,15 @@ function C.New(db, day)
     db.wins = db.wins or {}
     db.achievements = db.achievements or {}
     db.goalDays = tonumber(db.goalDays) or 0
+    C.InitFeatures(db)
     C.Day(db, day)
     return db
 end
 function C.Day(db, day)
-    if db.day ~= day then db.day = day; db.today = 0 end
+    if db.day ~= day then
+        db.day = day; db.today = 0; db.todayRunSeconds=0
+        db.calDistance=0; db.calEaten=0; db.lastMeal=nil; db.customWins={}
+    end
 end
 function C.Add(db, day, speed, elapsed, eligible)
     C.Day(db, day)
@@ -32,9 +36,11 @@ function C.Add(db, day, speed, elapsed, eligible)
     local steps = distance / db.stride
     -- Accumulate time for each measured segment, using its actual speed.
     db.runSeconds = db.runSeconds + distance / speed
+    db.todayRunSeconds = db.todayRunSeconds + distance / speed
+    db.calDistance = db.calDistance + distance
     db.today = db.today + steps
     db.total = db.total + steps
-    return before < db.goal and db.today >= db.goal
+    return before < db.goal and db.today >= db.goal, C.GoalCrossings(db,before)
 end
 
 C.Milestones = {
