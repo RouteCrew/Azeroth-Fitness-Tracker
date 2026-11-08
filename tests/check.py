@@ -9,6 +9,8 @@ lib.lua_pcallk.argtypes=[ctypes.c_void_p,ctypes.c_int,ctypes.c_int,ctypes.c_int,
 lib.lua_tolstring.argtypes=[ctypes.c_void_p,ctypes.c_int,ctypes.c_void_p];lib.lua_tolstring.restype=ctypes.c_char_p
 code='''
 local NS={}
+function GetLocale() return os.getenv('AFT_TEST_LOCALE') or 'deDE' end
+assert(loadfile('ForeverSteps/Locale.lua'))('ForeverSteps',NS)
 assert(loadfile('ForeverSteps/Core.lua'))('ForeverSteps',NS)
 local c=NS.Core
 local db=c.New(nil,'2026-11-07')
@@ -34,8 +36,10 @@ function methods:SetHeight(h) self.height=h end
 function methods:GetHeight() return self.height end
 function methods:GetWidth() return self.width end
 function methods:GetFrameLevel() return 1 end
-function methods:GetFont() return 'font',12,'' end
-function methods:SetFont(f,size,flags) self.font=f end
+function methods:GetFont() return self.font or 'font',self.fontSize or 12,'' end
+function methods:GetUnboundedStringWidth() return #(self.text or '')*6 end
+function methods:SetText(t) self.text=t end
+function methods:SetFont(f,size,flags) self.font=f; self.fontSize=size end
 function methods:SetAlpha(a) self.alpha=a end
 function methods:IsShown() return self.shown end
 function methods:SetShown(v) if v then self:Show() else self:Hide() end end
@@ -158,7 +162,8 @@ local options=panel.settings
 options.opacity.scripts.OnValueChanged(options.opacity,50)
 assert(panel.alpha==0.5 and ForeverStepsDB.transparency==50)
 options.fontButton.scripts.OnClick(options.fontButton)
-assert(ForeverStepsDB.fontStyle==2 and panel.today.font:find('ARIALN',1,true))
+assert(ForeverStepsDB.fontStyle==(NS.nativeFontOnly and 1 or 2))
+assert(NS.nativeFontOnly and panel.today.font==STANDARD_TEXT_FONT or panel.today.font:find('ARIALN',1,true))
 options.borderButton.scripts.OnClick(options.borderButton)
 assert(ForeverStepsDB.borderStyle==2)
 options.totalButton.scripts.OnClick(); assert(not panel.total.shown and not panel.totalLabel.shown)
@@ -168,7 +173,7 @@ d.scripts.OnEvent(d,'PLAYER_REGEN_ENABLED'); assert(not options.shown)
 d.scripts.OnEvent(d,'ADDON_LOADED','ForeverSteps')
 panel=named.ForeverStepsFrame
 assert(panel:GetHeight()==282 and panel.alpha==0.5)
-assert(ForeverStepsDB.fontStyle==2 and ForeverStepsDB.borderStyle==2)
+assert(ForeverStepsDB.fontStyle==(NS.nativeFontOnly and 1 or 2) and ForeverStepsDB.borderStyle==2)
 print('PASS: collapse, settings, fonts, opacity, total visibility, persistence')
 SlashCmdList.FOREVERSTEPS('ausblenden')
 local sameSettings=panel.settings
@@ -198,9 +203,37 @@ assert(c.New(timeDB,'2026-11-09').runSeconds==1.25)
 assert(c.FormatTime(0)=='00:00:00')
 assert(c.FormatTime(59.9)=='00:00:59')
 assert(c.FormatTime(3600)=='01:00:00')
-assert(c.FormatTime(90061)=='1d 01:01:01')
+assert(c.FormatTime(90061)=='1'..NS.L.DAY_SHORT..' 01:01:01')
 assert(panel.twr~=nil)
 print('PASS: TWR migration, speed changes, exclusions, stride independence, persistence, formatting')
+for locale, entries in pairs(NS.translations) do
+    for key, english in pairs(NS.translations.enUS) do
+        assert(type(entries[key])=='string' and entries[key]~='',locale..':'..key)
+    end
+    for i=1,4 do
+        local text='AFT: '..string.format(entries['JOKE'..i],'1,000,000')
+        assert(#text<=255,locale..' guild message too long: '..#text)
+    end
+end
+local matched=false
+for i=1,4 do if sent[1][1]=='AFT: '..string.format(NS.L['JOKE'..i],'1') then matched=true end end
+assert(matched,'guild joke must match the selected client language')
+local english=NS.translations.enUS
+local selected=NS.translations[NS.locale]
+if selected and selected~=english then
+    local original=selected.READY
+    selected.READY=nil
+    assert(NS.L.READY==english.READY)
+    selected.READY=original
+elseif not selected then
+    assert(NS.L.READY==english.READY)
+end
+SlashCmdList.FOREVERSTEPS('goal 2500'); assert(ForeverStepsDB.goal==2500)
+SlashCmdList.FOREVERSTEPS('show'); assert(panel.shown)
+assert(panel.totalLabel.text==NS.L.TOTAL)
+assert(panel.badges[1].text:find(NS.L.ACH1,1,true))
+assert(panel.settings.fontButton.text:find(NS.L.FONT,1,true))
+print('PASS: locale '..NS.locale..', complete translations, guild byte limits, English aliases')
 print('PASS: core cases, syntax, UI/event mocks, exclusions, secrets, commands')
 '''
 err=lib.luaL_loadstring(L,code.encode()) or lib.lua_pcallk(L,0,0,0,0,None)

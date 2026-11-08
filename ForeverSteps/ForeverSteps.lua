@@ -1,6 +1,7 @@
 local addon, NS = ...
+local L = NS.L
 local C, db, panel = NS.Core
-local active, status, clock, cachedDay = false, "Bereit", 0
+local active, status, clock, cachedDay = false, L.READY, 0
 local driver = CreateFrame("Frame")
 local inCombat = false
 local resize
@@ -9,14 +10,31 @@ local function number(n)
     local s = tostring(math.floor(n))
     while true do
         local changed
-        s, changed = s:gsub("^(%d+)(%d%d%d)", "%1.%2")
+        s, changed = s:gsub("^(%d+)(%d%d%d)", "%1" .. NS.groupSeparator .. "%2")
         if changed == 0 then return s end
     end
 end
 local function say(s) print("|cffffd27fAFT:|r " .. s) end
+local function fitText(f)
+    local path,size,flags=f:GetFont()
+    if not path then return end
+    f.aftBaseSize=f.aftBaseSize or size
+    size=f.aftBaseSize
+    f:SetFont(path,size,flags or "")
+    local width=f:GetUnboundedStringWidth()
+    if width and width>f.aftMaxWidth then
+        f:SetFont(path,math.max(8,size*f.aftMaxWidth/width),flags or "")
+    end
+end
+local function fitLabels(parent)
+    for _, f in ipairs(parent.fitnessFonts or {}) do fitText(f) end
+end
 local function label(parent, font, x, y, text)
     local f = parent:CreateFontString(nil, "OVERLAY", font)
     f:SetPoint("TOPLEFT", x, y); f:SetText(text)
+    f.aftMaxWidth=parent:GetWidth()-x-22
+    f:SetWidth(f.aftMaxWidth); f:SetWordWrap(false)
+    f:SetJustifyH("LEFT")
     parent.fitnessFonts = parent.fitnessFonts or {}
     parent.fitnessFonts[#parent.fitnessFonts+1] = f
     return f
@@ -39,8 +57,9 @@ local function toggleLock()
     stopInteraction()
     db.locked = not db.locked
     panel.grip:SetAlpha(db.locked and 0.25 or 1)
-    panel.hint:SetText(db.locked and "Gesperrt · Rechtsklick zum Entsperren" or "Rechtsklick: sperren · Ecke: Größe")
-    say(db.locked and "Fenster gesperrt." or "Fenster verschiebbar und skalierbar.")
+    panel.hint:SetText(db.locked and L.LOCK_HINT or L.UNLOCK_HINT)
+    fitText(panel.hint)
+    say(db.locked and L.LOCKED or L.UNLOCKED)
 end
 local function applyScale(value)
     if db.locked or inCombat then return end
@@ -55,11 +74,12 @@ local function applyScale(value)
     savePosition()
 end
 local fonts = {
-    {"WoW Standard", STANDARD_TEXT_FONT},
+    {L.DEFAULT_FONT, STANDARD_TEXT_FONT},
     {"Arial", "Fonts\\ARIALN.TTF"},
     {"Morpheus", "Fonts\\MORPHEUS.TTF"},
 }
-local borders = {"Gold", "Schlicht", "Ohne Rahmen"}
+if NS.nativeFontOnly then fonts = {{L.DEFAULT_FONT, STANDARD_TEXT_FONT}} end
+local borders = {L.GOLD, L.PLAIN, L.NO_BORDER}
 local function appearance()
     local style = db.borderStyle or 1
     local edge = style == 1 and "Interface\\DialogFrame\\UI-DialogBox-Border"
@@ -72,10 +92,11 @@ local function appearance()
     local font = fonts[db.fontStyle or 1] or fonts[1]
     for _, text in ipairs(panel.fitnessFonts or {}) do
         local _, size, flags = text:GetFont()
-        text:SetFont(font[2],size or 12,flags or "")
+        text:SetFont(font[2],text.aftBaseSize or size or 12,flags or "")
     end
     panel.total:SetShown(db.showTotal ~= false)
     panel.totalLabel:SetShown(db.showTotal ~= false)
+    fitLabels(panel)
 end
 local function layoutAchievements()
     stopInteraction()
@@ -100,7 +121,7 @@ local function buildSettings()
     settings:SetIgnoreParentAlpha(true)
     settings:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background",edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border",tile=true,tileSize=32,edgeSize=24,insets={left=6,right=6,top=6,bottom=6}})
     settings:SetBackdropColor(0.07,0.05,0.025,1)
-    label(settings,"GameFontNormalLarge",18,-20,"Einstellungen")
+    label(settings,"GameFontNormalLarge",18,-20,L.SETTINGS)
     local close=CreateFrame("Button",nil,settings,"UIPanelCloseButton")
     close:SetPoint("TOPRIGHT",-4,-4); close:SetScript("OnClick",function() settings:Hide() end)
     local opacityLabel=label(settings,"GameFontNormal",20,-55,"")
@@ -111,11 +132,12 @@ local function buildSettings()
     slider:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8"})
     slider:SetBackdropColor(0.25,0.2,0.12,1)
     slider:SetThumbTexture("Interface\\Buttons\\UI-SliderBar-Button-Horizontal")
-    opacityLabel:SetText("Transparenz: "..(db.transparency or 0).." %")
+    opacityLabel:SetText(L.TRANSPARENCY..(db.transparency or 0).." %")
     slider:SetValue(db.transparency or 0)
     slider:SetScript("OnValueChanged",function(_,value)
         db.transparency=math.floor(value+0.5)
-        opacityLabel:SetText("Transparenz: "..db.transparency.." %")
+        opacityLabel:SetText(L.TRANSPARENCY..db.transparency.." %")
+        fitText(opacityLabel)
         appearance()
     end)
     local function button(y)
@@ -124,26 +146,27 @@ local function buildSettings()
         return b
     end
     local fontButton=button(-117); settings.fontButton=fontButton
-    fontButton:SetText("Schrift: "..fonts[db.fontStyle or 1][1])
+    fontButton:SetText(L.FONT..(fonts[db.fontStyle or 1] or fonts[1])[1])
     fontButton:SetScript("OnClick",function(self)
         db.fontStyle=(db.fontStyle or 1)%#fonts+1
-        self:SetText("Schrift: "..fonts[db.fontStyle][1]); appearance()
+        self:SetText(L.FONT..fonts[db.fontStyle][1]); appearance()
     end)
     local borderButton=button(-153); settings.borderButton=borderButton
-    borderButton:SetText("Rahmen: "..borders[db.borderStyle or 1])
+    borderButton:SetText(L.BORDER..borders[db.borderStyle or 1])
     borderButton:SetScript("OnClick",function(self)
         db.borderStyle=(db.borderStyle or 1)%#borders+1
-        self:SetText("Rahmen: "..borders[db.borderStyle]); appearance()
+        self:SetText(L.BORDER..borders[db.borderStyle]); appearance()
     end)
     local totalButton=button(-189); settings.totalButton=totalButton
-    local function totalText() totalButton:SetText("Gesamtschritte: "..(db.showTotal ~= false and "An" or "Aus")) end
+    local function totalText() totalButton:SetText(L.TOTAL_OPTION..(db.showTotal ~= false and L.ON or L.OFF)) end
     totalText()
     totalButton:SetScript("OnClick",function()
         db.showTotal=db.showTotal == false
         totalText(); appearance()
     end)
-    label(settings,"GameFontDisableSmall",20,-237,"Schrift und Rahmen per Klick wechseln.")
-    label(settings,"GameFontDisableSmall",20,-253,"Änderungen werden sofort gespeichert.")
+    label(settings,"GameFontDisableSmall",20,-237,L.SETTINGS_HINT)
+    label(settings,"GameFontDisableSmall",20,-253,L.SAVED_HINT)
+    fitLabels(settings)
     settings:Hide()
 end
 local function refresh()
@@ -151,7 +174,7 @@ local function refresh()
     panel.today:SetText(number(db.today))
     panel.total:SetText(number(db.total))
     panel.progress:SetValue(math.min(db.today / db.goal, 1))
-    panel.goal:SetText("Tagesziel  " .. number(db.goal) .. "  ·  " .. math.floor(db.today / db.goal * 100) .. "%")
+    panel.goal:SetText(L.DAILY_GOAL .. number(db.goal) .. "  ·  " .. math.floor(db.today / db.goal * 100) .. "%")
     panel.status:SetText(status)
     panel.twr:SetText(C.FormatTime(db.runSeconds))
     if panel.badges then
@@ -159,29 +182,30 @@ local function refresh()
             local earned = db.achievements[milestone[1]]
             panel.badges[i]:SetText((earned and "|cffffd27f+ " or "|cff888888- ") .. milestone[2] .. "  (" .. milestone[1] .. ")|r")
         end
-        panel.achTitle:SetText("ERFOLGE  ·  " .. db.goalDays .. " Tagesziele")
+        panel.achTitle:SetText(L.ACH_HEADER .. db.goalDays .. L.GOALS_SUFFIX)
     end
+    fitLabels(panel)
 end
 local function celebrate()
     local completed, unlocked = C.Complete(db)
     if not completed then return end
-    say("Tagesziel geschafft! Deine Stiefel bitten um bezahlten Urlaub.")
+    say(L.GOAL_DONE)
     for _, title in ipairs(unlocked) do
-        say("Erfolg freigeschaltet: " .. title)
+        say(L.ACH_UNLOCKED .. title)
         if UIErrorsFrame then UIErrorsFrame:AddMessage("AFT: " .. title, 1, 0.82, 0.3, 1) end
     end
     if db.guildMessages ~= false and IsInGuild and IsInGuild() then
         local jokes = {
-            "Tagesziel geschafft: %s Schritte! Mein Mount hat jetzt Verlustängste.",
-            "%s Schritte heute! Ich tanke jetzt nur noch Wasser. Und vielleicht einen Raid.",
-            "%s Schritte! Meine Stiefel sind episch, der Muskelkater ist legendär.",
-            "Tagesziel: %s Schritte! Habe Ausdauer geskillt. Mein Sofa ist jetzt mein Erzfeind.",
+            L.JOKE1,
+            L.JOKE2,
+            L.JOKE3,
+            L.JOKE4,
         }
         local send = C_ChatInfo and C_ChatInfo.SendChatMessage or SendChatMessage
         if send then
             local ok = pcall(send, "AFT: " .. string.format(jokes[math.random(#jokes)], number(db.today)), "GUILD")
-            if not ok then say("Gildennachricht vom Client blockiert; kein erneuter Sendeversuch.") end
-        else say("Gildenchat-API nicht verfügbar.") end
+            if not ok then say(L.CHAT_BLOCKED) end
+        else say(L.CHAT_MISSING) end
     end
 end
 local function buildUI()
@@ -205,17 +229,19 @@ local function buildUI()
     local icon = panel:CreateTexture(nil, "ARTWORK")
     icon:SetSize(30,30); icon:SetPoint("TOPLEFT", 18,-17)
     icon:SetTexture("Interface\\Icons\\Ability_Rogue_Sprint")
-    label(panel, "GameFontNormalLarge", 58,-18,"AZEROTH")
+    local title = label(panel, "GameFontNormalLarge", 58,-18,"AZEROTH")
+    title.aftMaxWidth=175; title:SetWidth(175)
     label(panel, "GameFontDisableSmall", 59,-38,"FITNESS TRACKER")
     local close = CreateFrame("Button", nil, panel, "UIPanelCloseButton")
     close:SetPoint("TOPRIGHT", -4,-4)
     close:SetScript("OnClick", function() db.hidden=true; visibility() end)
-    label(panel, "GameFontNormal", 22,-66,"HEUTE")
+    label(panel, "GameFontNormal", 22,-66,L.TODAY)
     panel.today = label(panel, "GameFontHighlightHuge", 22,-85,"0")
     panel.today:SetFont(STANDARD_TEXT_FONT, 32, "OUTLINE")
-    panel.totalLabel = label(panel, "GameFontDisableSmall", 178,-72,"GESAMT")
+    panel.today.aftMaxWidth=146; panel.today:SetWidth(146)
+    panel.totalLabel = label(panel, "GameFontDisableSmall", 178,-72,L.TOTAL)
     panel.total = label(panel, "GameFontHighlightLarge", 178,-94,"0")
-    panel.total:SetWidth(100); panel.total:SetJustifyH("LEFT")
+    panel.total.aftMaxWidth=100; panel.total:SetWidth(100); panel.total:SetJustifyH("LEFT")
     panel.progress = CreateFrame("StatusBar", nil, panel)
     panel.progress:SetPoint("TOPLEFT",22,-137); panel.progress:SetSize(256,12)
     panel.progress:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
@@ -224,9 +250,10 @@ local function buildUI()
     bg:SetAllPoints(); bg:SetColorTexture(0.18,0.14,0.08,1)
     panel.goal = label(panel,"GameFontNormalSmall",22,-158,"")
     panel.status = label(panel,"GameFontHighlightSmall",22,-181,"")
-    label(panel,"GameFontNormalSmall",22,-207,"TWR · Gesamtlaufzeit")
+    local twrLabel=label(panel,"GameFontNormalSmall",22,-207,L.TWR_LABEL)
+    twrLabel.aftMaxWidth=132; twrLabel:SetWidth(132)
     panel.twr = label(panel,"GameFontHighlightSmall",158,-207,"00:00:00")
-    panel.twr:SetWidth(120); panel.twr:SetJustifyH("RIGHT")
+    panel.twr.aftMaxWidth=120; panel.twr:SetWidth(120); panel.twr:SetJustifyH("RIGHT")
     local twrInfo=CreateFrame("Frame",nil,panel)
     twrInfo:SetPoint("TOPLEFT",20,-201); twrInfo:SetSize(260,24); twrInfo:EnableMouse(true)
     twrInfo:RegisterForDrag("LeftButton")
@@ -238,15 +265,15 @@ local function buildUI()
     twrInfo:SetScript("OnEnter",function(self)
         if GameTooltip then
             GameTooltip:SetOwner(self,"ANCHOR_TOP")
-            GameTooltip:SetText("Time wasted Running (TWR)")
-            GameTooltip:AddLine("Gesamtlaufzeit seit Version 1.4.0. Je Wegstück: Strecke / aktuelle Geschwindigkeit.",1,1,1,true)
-            GameTooltip:AddLine("Nur gemessene Bewegung zu Fuß; keine Standzeit. Format: Tage + Stunden:Minuten:Sekunden.",1,1,1,true)
+            GameTooltip:SetText(L.TWR_TITLE)
+            GameTooltip:AddLine(L.TWR_DESC,1,1,1,true)
+            GameTooltip:AddLine(L.TWR_FORMAT,1,1,1,true)
             GameTooltip:Show()
         end
     end)
     twrInfo:SetScript("OnLeave",function() if GameTooltip then GameTooltip:Hide() end end)
     twrInfo:SetScript("OnHide",function() if GameTooltip then GameTooltip:Hide() end end)
-    panel.achTitle = label(panel,"GameFontNormal",44,-238,"ERFOLGE")
+    panel.achTitle = label(panel,"GameFontNormal",44,-238,L.ACHIEVEMENTS)
     panel.achToggle=CreateFrame("Button",nil,panel,"UIPanelButtonTemplate")
     panel.achToggle:SetSize(20,20); panel.achToggle:SetPoint("TOPLEFT",20,-233)
     panel.achToggle:SetScript("OnClick",function()
@@ -258,7 +285,7 @@ local function buildUI()
         panel.badges[i] = label(panel,"GameFontHighlightSmall",22,-242-i*18,"")
     end
     panel.hint = label(panel,"GameFontDisableSmall",22,-378,"")
-    panel.hint:SetText(db.locked and "Gesperrt · Rechtsklick zum Entsperren" or "Rechtsklick: sperren · Ecke: Größe")
+    panel.hint:SetText(db.locked and L.LOCK_HINT or L.UNLOCK_HINT)
     local grip = CreateFrame("Button", nil, panel)
     panel.grip = grip
     grip:SetSize(22,22); grip:SetPoint("BOTTOMRIGHT",-5,5)
@@ -291,7 +318,7 @@ local function buildUI()
     gear:SetNormalTexture("Interface\\Buttons\\UI-OptionsButton")
     gear:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square","ADD")
     gear:SetScript("OnEnter",function(self)
-        if GameTooltip then GameTooltip:SetOwner(self,"ANCHOR_TOP"); GameTooltip:SetText("Azeroth Fitness Tracker – Einstellungen"); GameTooltip:Show() end
+        if GameTooltip then GameTooltip:SetOwner(self,"ANCHOR_TOP"); GameTooltip:SetText(L.SETTINGS_TITLE); GameTooltip:Show() end
     end)
     gear:SetScript("OnLeave",function() if GameTooltip then GameTooltip:Hide() end end)
     gear:SetScript("OnClick",function()
@@ -304,7 +331,7 @@ local function buildUI()
     refresh()
 end
 local function sample()
-    if db.paused then return 0,false,"Pausiert" end
+    if db.paused then return 0,false,L.PAUSED end
     -- Secret values must never be compared or used in arithmetic.
     local function flag(fn, ...)
         if not fn then return false end
@@ -312,20 +339,20 @@ local function sample()
         if issecretvalue and issecretvalue(value) then error("restricted") end
         return value
     end
-    if flag(UnitIsDeadOrGhost,"player") then return 0,false,"Tot / Geist" end
-    if flag(IsMounted) or flag(UnitOnTaxi,"player") or flag(UnitInVehicle,"player") then return 0,false,"Unterwegs ohne Schritte" end
-    if flag(IsFlying) or flag(IsSwimming) or flag(IsFalling) then return 0,false,"Keine Bodenschritte" end
+    if flag(UnitIsDeadOrGhost,"player") then return 0,false,L.DEAD end
+    if flag(IsMounted) or flag(UnitOnTaxi,"player") or flag(UnitInVehicle,"player") then return 0,false,L.NO_STEPS end
+    if flag(IsFlying) or flag(IsSwimming) or flag(IsFalling) then return 0,false,L.NOT_GROUND end
     local speed = GetUnitSpeed("player")
-    if issecretvalue and issecretvalue(speed) then return 0,false,"Messung durch Client gesperrt" end
-    if type(speed) ~= "number" then return 0,false,"Bewegungsdaten fehlen" end
-    return speed,true,speed > 0 and "Zu Fuß unterwegs" or "Bereit für dein Abenteuer"
+    if issecretvalue and issecretvalue(speed) then return 0,false,L.RESTRICTED end
+    if type(speed) ~= "number" then return 0,false,L.NO_DATA end
+    return speed,true,speed > 0 and L.WALKING or L.IDLE
 end
 driver:SetScript("OnUpdate", function(_, elapsed)
     if not db or not active then return end
     clock = clock + elapsed
     if clock >= 0.25 then cachedDay = day() end
     local ok, speed, eligible, state = pcall(sample)
-    if not ok then speed,eligible,state = 0,false,"Messung nicht verfügbar" end
+    if not ok then speed,eligible,state = 0,false,L.UNAVAILABLE end
     status = state
     local reached = C.Add(db,cachedDay,speed,elapsed,eligible)
     if reached then celebrate() end
@@ -355,23 +382,25 @@ SLASH_FOREVERSTEPS3="/fitness"
 SlashCmdList.FOREVERSTEPS=function(input)
     if not db then return end
     local cmd,arg = input:lower():match("^%s*(%S*)%s*(.-)%s*$")
+    local aliases={show="zeigen",hide="ausblenden",lock="sperren",goal="ziel",stride="schrittlaenge",size="groesse",guild="gilde",achievements="erfolge",help="hilfe"}
+    cmd=aliases[cmd] or cmd
     local n=tonumber((arg:gsub(",",".")))
     if cmd=="" or cmd=="zeigen" then db.hidden=false; visibility()
     elseif cmd=="ausblenden" then db.hidden=true; visibility()
     elseif cmd=="sperren" then toggleLock()
-    elseif cmd=="pause" then db.paused=not db.paused; say(db.paused and "Zähler pausiert." or "Zähler aktiv.")
+    elseif cmd=="pause" then db.paused=not db.paused; say(db.paused and L.COUNTER_PAUSED or L.COUNTER_ACTIVE)
     elseif cmd=="ziel" and n and n>=1 and n<=1000000 then db.goal=math.floor(n)
-    elseif cmd=="schrittlaenge" and n and n>=0.5 and n<=5 then db.stride=n; say("Schrittlänge: "..n.." Yards. Gilt für neue Schritte.")
+    elseif cmd=="schrittlaenge" and n and n>=0.5 and n<=5 then db.stride=n; say(L.STRIDE..n..L.STRIDE_SUFFIX)
     elseif cmd=="groesse" and n and n>=0.6 and n<=2 then applyScale(n)
     elseif cmd=="gilde" then
         db.guildMessages = db.guildMessages == false
-        say(db.guildMessages and "Gildennachrichten an." or "Gildennachrichten aus.")
+        say(db.guildMessages and L.GUILD_ON or L.GUILD_OFF)
     elseif cmd=="erfolge" then
-        say(db.goalDays .. " Tagesziele erreicht (nicht zwingend in Folge).")
-        for _, m in ipairs(C.Milestones) do say((db.achievements[m[1]] and "[Geschafft] " or "[Offen] ") .. m[2] .. " - " .. m[1] .. " Tage") end
+        say(db.goalDays .. L.GOALS_DONE)
+        for _, m in ipairs(C.Milestones) do say((db.achievements[m[1]] and L.EARNED or L.PENDING) .. m[2] .. " - " .. m[1] .. L.DAYS) end
     elseif cmd=="position" then
         if not db.locked and not inCombat then stopInteraction(); db.position=nil; panel:ClearAllPoints(); panel:SetPoint("CENTER") end
-    else say("/schritte [zeigen | ausblenden | sperren | pause | position | gilde | erfolge]"); say("/schritte ziel 10000 · groesse 1 · schrittlaenge 2,5 (Yards)") end
+    else say(L.HELP1); say(L.HELP2) end
     refresh()
 end
 
@@ -379,7 +408,7 @@ end
 SLASH_AZEROTHFITNESSTRACKER1="/aft"
 SlashCmdList.AZEROTHFITNESSTRACKER=function()
     if not db or not panel then return end
-    if inCombat then say("Die Einstellungen sind nach dem Kampf verfügbar."); return end
+    if inCombat then say(L.COMBAT_SETTINGS); return end
     stopInteraction()
     db.hidden=false
     visibility()

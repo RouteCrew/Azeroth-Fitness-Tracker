@@ -1,4 +1,5 @@
 local _, NS = ...
+local L = NS.L
 NS.Core = {}
 local C = NS.Core
 function C.New(db, day)
@@ -37,9 +38,9 @@ function C.Add(db, day, speed, elapsed, eligible)
 end
 
 C.Milestones = {
-    {1, "Der erste Schweiß"}, {3, "Sohlen statt Portale"},
-    {7, "Eine Woche Waden"}, {14, "Mount hat Urlaub"},
-    {30, "Azeroths Lauflegende"}, {100, "Die Sohlen des Schicksals"},
+    {1, L.ACH1}, {3, L.ACH3},
+    {7, L.ACH7}, {14, L.ACH14},
+    {30, L.ACH30}, {100, L.ACH100},
 }
 function C.Complete(db)
     if db.today < db.goal or db.wins[db.day] then return false, {} end
@@ -62,6 +63,6 @@ function C.FormatTime(seconds)
     local hours = math.floor(whole / 3600) % 24
     local minutes = math.floor(whole / 60) % 60
     local clock = string.format("%02d:%02d:%02d", hours, minutes, whole % 60)
-    if days > 0 then return days .. "d " .. clock end
+    if days > 0 then return days .. L.DAY_SHORT .. " " .. clock end
     return clock
 end

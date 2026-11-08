@@ -1,6 +1,6 @@
-# Azeroth Fitness Tracker 1.4.0
+# Azeroth Fitness Tracker 1.5.0
 
-Deutsches Schrittzähler-Addon für WoW: Forever 1.60.1 (Interface 16001).
+Mehrsprachiges Schrittzähler-Addon für WoW: Forever 1.60.1 (Interface 16001).
 
 ## Installation
 1. WoW vollständig schließen.
@@ -94,3 +94,21 @@ Für jedes gültige Bewegungsintervall gilt: Strecke = aktuelle Geschwindigkeit 
 Es gelten dieselben Ausschlüsse wie beim Schrittzähler: Stillstand, Reiten, Taxi, Fahrzeuge, Fliegen, Schwimmen, Fallen, Tot-/Geistzustand, manuelle Pause, Ladeunterbrechungen und gesperrte Bewegungsdaten werden nicht angerechnet. Ausblenden des Fensters stoppt die Messung nicht. TWR misst geschätzte Laufzeit, keine Zeitersparnis gegenüber Reiten und keine reale Fitnessaktivität.
 
 Bestehende Schritte und Einstellungen bleiben erhalten. TWR beginnt beim Update bei null, da frühere Schrittstände keine verlässlichen Geschwindigkeits- und Zeitdaten enthalten. Der Gesamtzeitstand überlebt Tageswechsel, Reload und normales Ausloggen.
+
+
+## Mehrsprachigkeit, ab Version 1.5.0
+
+Die Sprache wird automatisch über die WoW-Clientsprache (`GetLocale()`) gewählt. Übersetzt sind Menüs, Einstellungen, Hinweise, Statusmeldungen, Erfolge, TWR-Tooltip, Befehlsausgaben, Addon-Beschreibung und alle vier Gildensprüche. Der Produktname Azeroth Fitness Tracker und der Präfix `AFT:` bleiben unverändert.
+
+Unterstützt: Deutsch, Englisch, Französisch, Spanisch (Spanien und Lateinamerika), Italienisch, Portugiesisch (Brasilien), Russisch, Koreanisch sowie vereinfachtes und traditionelles Chinesisch. enGB verwendet Englisch, ptPT Portugiesisch. Unbekannte Sprachen und fehlende Einträge fallen auf Englisch zurück. Spanische Clientvarianten teilen sich die Übersetzungen.
+
+`/aft` öffnet in jeder Sprache die Einstellungen. Sprachunabhängige Befehle:
+
+- `/fitness show`, `hide`, `lock`, `pause`, `position`, `guild`, `achievements`, `help`
+- `/fitness goal 10000`, `/fitness size 1`, `/fitness stride 2.5`
+
+Die bisherigen deutschen Unterbefehle und `/schritte` bleiben gültig. Die Hilfe erklärt die englischen Befehlsschlüssel in der jeweiligen Clientsprache. Nach Änderung der WoW-Sprache das Spiel neu starten; Zähler, TWR und freigeschaltete Erfolge bleiben erhalten.
+
+Für Russisch, Koreanisch und Chinesisch verwendet das Addon ausschließlich die sprachgeeignete WoW-Standardschrift, damit die Zeichen lesbar bleiben. Arial und Morpheus stehen weiterhin in den lateinischen Sprachvarianten zur Auswahl. Längere Texte erhalten eine begrenzte Breite und werden bei Bedarf verkleinert.
+
+Die Texte befinden sich in `ForeverSteps/Locale.lua` und werden vor Zähllogik und Oberfläche geladen. Erweiterte Sprachtests: `python3 tests/check_locales.py` (gleiche Voraussetzungen wie `tests/check.py`). Geprüft werden alle Sprachvarianten, Fallbacks, Schlüsselvollständigkeit, lokalisierte Gildensprüche, Nachrichtenlänge, UI-Aufrufe und bestehende Funktionen. Darstellung und sprachliche Feinheiten wurden nicht in jedem echten Sprachclient geprüft.

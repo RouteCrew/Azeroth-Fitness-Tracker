@@ -1,8 +1,19 @@
 ## Interface: 16001
 ## Title: Azeroth Fitness Tracker
-## Notes: Tages- und Gesamtschritte im WoW-Stil
+## Notes: Daily steps, total steps and running time.
+## Notes-deDE: Tages- und Gesamtschritte sowie Laufzeit.
+## Notes-frFR: Pas quotidiens, pas totaux et temps de course.
+## Notes-esES: Pasos diarios, pasos totales y tiempo corriendo.
+## Notes-esMX: Pasos diarios, pasos totales y tiempo corriendo.
+## Notes-itIT: Passi giornalieri, passi totali e tempo di corsa.
+## Notes-ptBR: Passos diários, passos totais e tempo correndo.
+## Notes-ruRU: Шаги за день, всего шагов и время бега.
+## Notes-koKR: 일일 걸음 수, 총 걸음 수 및 달리기 시간.
+## Notes-zhCN: 每日步数、总步数和跑步时间。
+## Notes-zhTW: 每日步數、總步數與跑步時間。
 ## Author: Custom
-## Version: 1.4.0
+## Version: 1.5.0
 ## SavedVariablesPerCharacter: ForeverStepsDB
+Locale.lua
 Core.lua
 ForeverSteps.lua
