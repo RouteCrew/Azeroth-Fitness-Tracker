@@ -42,6 +42,9 @@ extra.enUS = {
     COLLAPSE = "Collapse achievements",
     POSITION_RESET = "Center window",
     LAST_SPELL = "Last spell ID: ",
+    PICK_COLOR = "Choose color",
+    STAGE_PICKER = "Select a milestone, then click the color square. Save to apply.",
+    PICKER_UNAVAILABLE = "The WoW color picker is unavailable.",
 }
 extra.deDE = {
     GENERAL = "Allgemein",
@@ -85,6 +88,9 @@ extra.deDE = {
     COLLAPSE = "Erfolge einklappen",
     POSITION_RESET = "Fenster zentrieren",
     LAST_SPELL = "Letzte Zauber-ID: ",
+    PICK_COLOR = "Farbe auswählen",
+    STAGE_PICKER = "Stufe auswählen und auf das Farbkästchen klicken. Mit Speichern übernehmen.",
+    PICKER_UNAVAILABLE = "Die WoW-Farbauswahl ist nicht verfügbar.",
 }
 extra.frFR = {
     GENERAL = "Général",
@@ -128,6 +134,9 @@ extra.frFR = {
     COLLAPSE = "Réduire les hauts faits",
     POSITION_RESET = "Centrer la fenêtre",
     LAST_SPELL = "Dernier ID de sort : ",
+    PICK_COLOR = "Choisir la couleur",
+    STAGE_PICKER = "Choisissez un palier, puis cliquez sur le carré de couleur. Enregistrez pour appliquer.",
+    PICKER_UNAVAILABLE = "Le sélecteur de couleur WoW est indisponible.",
 }
 extra.esES = {
     GENERAL = "General",
@@ -171,6 +180,9 @@ extra.esES = {
     COLLAPSE = "Contraer logros",
     POSITION_RESET = "Centrar ventana",
     LAST_SPELL = "Último ID de hechizo: ",
+    PICK_COLOR = "Elegir color",
+    STAGE_PICKER = "Elige una etapa y pulsa el cuadro de color. Guarda para aplicar.",
+    PICKER_UNAVAILABLE = "El selector de color de WoW no está disponible.",
 }
 extra.itIT = {
     GENERAL = "Generale",
@@ -214,6 +226,9 @@ extra.itIT = {
     COLLAPSE = "Comprimi imprese",
     POSITION_RESET = "Centra finestra",
     LAST_SPELL = "Ultimo ID incantesimo: ",
+    PICK_COLOR = "Scegli colore",
+    STAGE_PICKER = "Scegli una tappa e clicca sul riquadro del colore. Salva per applicare.",
+    PICKER_UNAVAILABLE = "Il selettore colori di WoW non è disponibile.",
 }
 extra.ptBR = {
     GENERAL = "Geral",
@@ -257,6 +272,9 @@ extra.ptBR = {
     COLLAPSE = "Recolher conquistas",
     POSITION_RESET = "Centralizar janela",
     LAST_SPELL = "Último ID de feitiço: ",
+    PICK_COLOR = "Escolher cor",
+    STAGE_PICKER = "Escolha uma etapa e clique no quadrado de cor. Salve para aplicar.",
+    PICKER_UNAVAILABLE = "O seletor de cores do WoW está indisponível.",
 }
 extra.ruRU = {
     GENERAL = "Общее",
@@ -300,6 +318,9 @@ extra.ruRU = {
     COLLAPSE = "Свернуть достижения",
     POSITION_RESET = "Окно по центру",
     LAST_SPELL = "Последний ID заклинания: ",
+    PICK_COLOR = "Выбрать цвет",
+    STAGE_PICKER = "Выберите этап и нажмите цветной квадрат. Сохраните для применения.",
+    PICKER_UNAVAILABLE = "Палитра WoW недоступна.",
 }
 extra.koKR = {
     GENERAL = "일반",
@@ -343,6 +364,9 @@ extra.koKR = {
     COLLAPSE = "업적 접기",
     POSITION_RESET = "창 중앙 배치",
     LAST_SPELL = "마지막 주문 ID: ",
+    PICK_COLOR = "색상 선택",
+    STAGE_PICKER = "단계를 선택하고 색상 상자를 누르세요. 저장하면 적용됩니다.",
+    PICKER_UNAVAILABLE = "WoW 색상 선택기를 사용할 수 없습니다.",
 }
 extra.zhCN = {
     GENERAL = "常规",
@@ -386,6 +410,9 @@ extra.zhCN = {
     COLLAPSE = "折叠成就",
     POSITION_RESET = "窗口居中",
     LAST_SPELL = "上次法术ID：",
+    PICK_COLOR = "选择颜色",
+    STAGE_PICKER = "选择阶段并点击色块，保存后生效。",
+    PICKER_UNAVAILABLE = "WoW颜色选择器不可用。",
 }
 extra.zhTW = {
     GENERAL = "一般",
@@ -429,5 +456,8 @@ extra.zhTW = {
     COLLAPSE = "摺疊成就",
     POSITION_RESET = "視窗置中",
     LAST_SPELL = "上次法術ID：",
+    PICK_COLOR = "選擇顏色",
+    STAGE_PICKER = "選擇階段並點擊色塊，儲存後生效。",
+    PICKER_UNAVAILABLE = "WoW色彩選擇器無法使用。",
 }
 for locale,entries in pairs(extra) do for key,value in pairs(entries) do NS.translations[locale][key]=value end end

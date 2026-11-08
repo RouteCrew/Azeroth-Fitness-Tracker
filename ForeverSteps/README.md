@@ -1,4 +1,4 @@
-# Azeroth Fitness Tracker 1.6.0
+# Azeroth Fitness Tracker 1.6.1
 
 Mehrsprachiges Schrittzähler-Addon für WoW: Forever 1.60.1 (Interface 16001).
 
@@ -117,3 +117,8 @@ Die Texte befinden sich in `ForeverSteps/Locale.lua` und werden vor Zähllogik u
 ## Neu in 1.6.0
 
 Neues Menü, Spruch-Editor, eigene Ziele, Meilensteinfarben und Fantasie-Kalorien: siehe [CONFIGURATION.md](CONFIGURATION.md). Diese Anleitung beschreibt die aktuellen Optionen und die Grenzen der Essenserkennung.
+
+
+## Neu in 1.6.1
+
+Farbstufen verwenden den WoW-Farbwähler mit sichtbarem Farbkästchen und einer Reihe anklickbarer Farbfelder. Die HEX-Texteingabe entfällt. Auf der Kalorienseite steht ein Kontrollkästchen zum Ein-/Ausblenden der Kalorienanzeige. Der Zustand wird gespeichert; die Messung läuft verborgen weiter.

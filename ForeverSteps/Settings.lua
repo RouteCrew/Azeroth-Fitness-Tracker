@@ -53,6 +53,7 @@ function NS.CreateSettings(parent,db,api)
         f.tabs[i]=button(f,22+(i-1)*144,-53,140,title,function() f:ShowPage(i) end)
     end
     function f:ShowPage(index)
+        if self.CloseColorPicker then self.CloseColorPicker() end
         note:SetText("")
         for i,p in ipairs(self.pages) do
             if i==index then p:Show(); if p.sync then p.sync() end else p:Hide() end
@@ -130,17 +131,102 @@ function NS.CreateSettings(parent,db,api)
     button(p,392,-152,182,L.DELETE,function()
         if db.customGoals[goalIndex] then table.remove(db.customGoals,goalIndex);selectGoal(0);feedback(true) end
     end)
-    text(p,0,-203,570,L.STAGE_FORMAT,"GameFontHighlightSmall")
-    local stageEdit=edit(p,5,-246,560,150,true);f.stageInput=stageEdit
-    local function stagesText()
-        local lines={};for _,s in ipairs(db.stages) do lines[#lines+1]=s[1].." #"..s[2] end
-        stageEdit:SetText(table.concat(lines,"\n"))
+    text(p,0,-203,570,L.STAGE_PICKER,"GameFontHighlightSmall")
+    local stageIndex,stageHex=1,"ff9900"
+    local stageCount=text(p,48,-253,480,"")
+    local stageThreshold=numeric(p,0,-289,290,L.STEPS_TARGET)
+    f.stageThreshold=stageThreshold
+    local swatch=CreateFrame("Button",nil,p,"BackdropTemplate")
+    f.stageSwatch=swatch
+    swatch:SetSize(38,30);swatch:SetPoint("TOPLEFT",312,-310)
+    swatch:SetBackdrop({edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=8})
+    local color=swatch:CreateTexture(nil,"ARTWORK")
+    color:SetPoint("TOPLEFT",4,-4);color:SetPoint("BOTTOMRIGHT",-4,4)
+    swatch.fill=color
+    local function showColor(hex)
+        stageHex=hex
+        color:SetColorTexture(tonumber(hex:sub(1,2),16)/255,tonumber(hex:sub(3,4),16)/255,tonumber(hex:sub(5,6),16)/255,1)
     end
-    button(p,0,-424,280,L.SAVE,function()
-        local parsed=C.ParseStages(stageEdit:GetText());if parsed then db.stages=parsed end;feedback(parsed~=nil)
+    local pickerToken
+    f.CloseColorPicker=function()
+        local cp=ColorPickerFrame
+        if pickerToken and cp and cp.GetExtraInfo and cp:GetExtraInfo()==pickerToken then cp:Hide() end
+        pickerToken=nil
+    end
+    local function pickColor()
+        local cp=ColorPickerFrame
+        if not cp or not cp.SetupColorPickerAndShow then note:SetText(L.PICKER_UNAVAILABLE);return end
+        f.CloseColorPicker()
+        local original=stageHex
+        local token={};pickerToken=token
+        cp:SetupColorPickerAndShow({
+            r=tonumber(original:sub(1,2),16)/255,g=tonumber(original:sub(3,4),16)/255,b=tonumber(original:sub(5,6),16)/255,
+            hasOpacity=false,extraInfo=token,
+            swatchFunc=function()
+                if pickerToken~=token then return end
+                local r,g,b=cp:GetColorRGB()
+                local function byte(v)return math.floor(math.max(0,math.min(1,v))*255+0.5) end
+                showColor(string.format("%02x%02x%02x",byte(r),byte(g),byte(b)))
+            end,
+            cancelFunc=function()
+                if pickerToken==token then showColor(original);pickerToken=nil end
+            end,
+        })
+    end
+    swatch:SetScript("OnClick",pickColor)
+    button(p,362,-311,212,L.PICK_COLOR,pickColor)
+    local palette={}
+    local selectStage
+    for i=1,20 do
+        local box=CreateFrame("Button",nil,p,"BackdropTemplate")
+        box:SetSize(24,24);box:SetPoint("TOPLEFT",(i-1)*28,-368)
+        box:SetBackdrop({edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=8})
+        box.fill=box:CreateTexture(nil,"ARTWORK")
+        box.fill:SetPoint("TOPLEFT",4,-4);box.fill:SetPoint("BOTTOMRIGHT",-4,4)
+        box:SetScript("OnClick",function()selectStage(i) end)
+        box:SetScript("OnEnter",function(self)
+            if GameTooltip and db.stages[i] then
+                GameTooltip:SetOwner(self,"ANCHOR_TOP");GameTooltip:SetText(api.number(db.stages[i][1]));GameTooltip:Show()
+            end
+        end)
+        box:SetScript("OnLeave",function()if GameTooltip then GameTooltip:Hide() end end)
+        palette[i]=box
+    end
+    f.stagePalette=palette
+    selectStage=function(index)
+        f.CloseColorPicker()
+        stageIndex=math.max(1,math.min(#db.stages+1,index))
+        local stage=db.stages[stageIndex]
+        stageThreshold:SetText(stage and tostring(stage[1]) or "")
+        stageCount:SetText(stage and (stageIndex.." / "..#db.stages.."   "..api.number(stage[1])) or L.NEW)
+        showColor(stage and stage[2] or "ff9900")
+        for i,box in ipairs(palette) do
+            local entry=db.stages[i];box:SetShown(entry~=nil)
+            if entry then
+                local hex=entry[2];box.fill:SetColorTexture(tonumber(hex:sub(1,2),16)/255,tonumber(hex:sub(3,4),16)/255,tonumber(hex:sub(5,6),16)/255,1)
+                box:SetBackdropBorderColor(i==stageIndex and 1 or 0.4,i==stageIndex and 0.8 or 0.4,0.3)
+            end
+        end
+    end
+    f.stagePrevious=button(p,0,-246,40,"<",function()selectStage(stageIndex-1) end)
+    f.stageNext=button(p,534,-246,40,">",function()selectStage(stageIndex+1) end)
+    f.newStage=button(p,0,-424,130,L.NEW,function()selectStage(#db.stages+1) end)
+    f.saveStage=button(p,144,-424,130,L.SAVE,function()
+        local threshold=value(stageThreshold)
+        if not threshold or threshold%1~=0 or threshold<1 or threshold>10000000 or stageIndex>20 then feedback(false);return end
+        for i,entry in ipairs(db.stages) do if i~=stageIndex and entry[1]==threshold then feedback(false);return end end
+        f.CloseColorPicker()
+        local entry={threshold,stageHex};db.stages[stageIndex]=entry
+        table.sort(db.stages,function(a,b)return a[1]<b[1] end)
+        for i,v in ipairs(db.stages) do if v==entry then selectStage(i);break end end
+        feedback(true)
     end)
-    button(p,294,-424,280,L.RESET,function()db.stages=nil;C.InitFeatures(db);stagesText();feedback(true) end)
-    p.sync=function()selectGoal(goalIndex);stagesText() end
+    f.deleteStage=button(p,288,-424,130,L.DELETE,function()
+        if #db.stages<=1 or not db.stages[stageIndex] then feedback(false);return end
+        table.remove(db.stages,stageIndex);selectStage(math.min(stageIndex,#db.stages));feedback(true)
+    end)
+    button(p,432,-424,142,L.RESET,function()db.stages=nil;C.InitFeatures(db);selectStage(1);feedback(true) end)
+    p.sync=function()selectGoal(goalIndex);selectStage(stageIndex) end
     -- Message editor. No chat sends occur from this page.
     p=f.pages[3]
     text(p,0,0,570,L.MESSAGE_NOTE,"GameFontHighlightSmall")
@@ -178,7 +264,15 @@ function NS.CreateSettings(parent,db,api)
     -- Fantasy calorie model and explicit food overrides.
     p=f.pages[4]
     text(p,0,0,570,L.CAL_NOTE,"GameFontHighlightSmall")
-    local raceLabel=text(p,0,-47,570,"")
+    local showCal=CreateFrame("CheckButton",nil,p,"UICheckButtonTemplate")
+    f.showCalories=showCal
+    showCal:SetSize(26,26);showCal:SetPoint("TOPLEFT",0,-42)
+    text(p,32,-48,260,L.SHOW_CAL,"GameFontNormalSmall")
+    showCal:SetScript("OnClick",function(self)
+        db.showCalories=self:GetChecked() and true or false
+        api.layout();api.refresh()
+    end)
+    local raceLabel=text(p,300,-48,274,"","GameFontHighlightSmall")
     local base=numeric(p,0,-72,280,L.RACE_BASE)
     local rate=numeric(p,300,-72,274,L.MOVE_RATE)
     local meal=numeric(p,0,-136,280,L.MEAL_VALUE)
@@ -206,6 +300,7 @@ function NS.CreateSettings(parent,db,api)
         elseif f.page==4 then last:SetText(L.LAST_SPELL..tostring(api.lastSpell() or "-")) end
     end
     p.sync=function()
+        showCal:SetChecked(db.showCalories~=false)
         local race,raceName=api.race();raceLabel:SetText(raceName.."  ("..race..")")
         base:SetText(tostring(C.RaceBase(db,race)));rate:SetText(tostring(db.calRate));meal:SetText(tostring(db.mealCalories))
         auto:SetText((db.autoFood~=false and "[+] " or "[-] ")..L.AUTO_FOOD)
@@ -214,7 +309,7 @@ function NS.CreateSettings(parent,db,api)
         last:SetText(L.LAST_SPELL..tostring(api.lastSpell() or "-"))
     end
     f:SetScript("OnShow",function(self)self:ShowPage(self.page or 1) end)
-    f:SetScript("OnHide",function(self)self:StopMovingOrSizing() end)
+    f:SetScript("OnHide",function(self)self:StopMovingOrSizing();self.CloseColorPicker();if GameTooltip then GameTooltip:Hide() end end)
     f:ShowPage(1);f:Hide()
     return f
 end

@@ -1,4 +1,4 @@
-# Azeroth Fitness Tracker 1.6.0 – Einstellungen
+# Azeroth Fitness Tracker 1.6.1 – Einstellungen
 
 `/aft` oder das Zahnrad öffnet ein eigenes, verschiebbares Menü mit vier Seiten. Es passt seine Größe an kleinere Bildschirme an und wird im Kampf geschlossen. Alle Texte folgen weiterhin der WoW-Clientsprache. Eigene Texte werden nicht automatisch übersetzt.
 
@@ -32,7 +32,9 @@ Die Farben beziehen sich auf erreichte absolute Tages-Schrittstände:
 
 Die Füllung zeigt `heutige Schritte / nächster Meilenstein`; beim Erreichen einer Stufe wird auf den nächsten Meilenstein umgestellt. Die Farbe bleibt dabei sichtbar, beispielsweise Orange bei 10.000 von nun 20.000 Schritten. Nach der letzten Stufe bleibt die Leiste voll. Das Haupt-Tagesziel wird separat als Zahl und Prozent angezeigt.
 
-Eigene Farbstufen: pro Zeile `Schrittzahl #HEX`, z. B. `15000 #ff9900`. Bis zu 20 eindeutige Stufen von 1 bis 10.000.000; sie werden beim Speichern sortiert. **Standard wiederherstellen** stellt die Tabelle oben wieder her. Farbstufen sind unabhängig von eigenen benannten Zielen.
+Eigene Farbstufen: Mit den Pfeilen oder den Farbkästchen eine Stufe auswählen. Die Schrittzahl im Zahlenfeld ändern und auf das große Farbkästchen oder **Farbe auswählen** klicken. Im WoW-Farbwähler die Farbe wählen; das Kästchen zeigt die Auswahl direkt an. **Abbrechen** im Farbwähler stellt die vorherige Auswahl wieder her. Erst **Speichern** übernimmt Schrittzahl und Farbe. Eine HEX-Eingabe ist nicht mehr nötig.
+
+Mit **Neu** weitere Stufen anlegen und mit **Löschen** entfernen. Mindestens eine und höchstens 20 eindeutige Stufen von 1 bis 10.000.000 bleiben möglich; sie werden beim Speichern sortiert. **Standard wiederherstellen** stellt die Tabelle oben wieder her. Farbstufen sind unabhängig von eigenen benannten Zielen. Nicht gespeicherte Änderungen gehen beim Wechsel der Seite oder Stufe verloren.
 
 ## Gildensprüche
 
@@ -53,6 +55,8 @@ Beispiel: `Schon {steps} Schritte in {time}! Meine Stiefel kündigen.`
 Unbekannte Platzhalter, Links/Steuercodes und Zeilenumbrüche werden abgelehnt. Vorlagen dürfen höchstens 500 Bytes lang sein. Ausgehende Nachrichten werden bei Bedarf UTF-8-sicher auf 255 Bytes gekürzt. Nicht gespeicherte Editoränderungen gehen beim Wechseln der Seite verloren.
 
 ## Fantasie-Kalorien
+
+Direkt auf der Kalorienseite schaltet **Kalorienleiste anzeigen** die komplette Kalorienanzeige im Hauptfenster ein oder aus. Dieselbe Einstellung steht auch unter Allgemein. Beim Ausblenden wird das Fenster kompakter; die Berechnung und gespeicherte Aufnahme laufen weiter. Die Auswahl bleibt nach Reload erhalten.
 
 Dies sind Spielwerte für den Charakter. WoW selbst hat kein entsprechendes Ernährungssystem.
 

@@ -45,6 +45,9 @@ function methods:SetText(t) self.text=t end
 function methods:GetText() return self.text or "" end
 function methods:SetFont(f,size,flags) self.font=f; self.fontSize=size end
 function methods:SetAlpha(a) self.alpha=a end
+function methods:SetChecked(v) self.checked=v end
+function methods:GetChecked() return self.checked end
+function methods:SetColorTexture(r,g,b,a) self.r=r;self.g=g;self.b=b;self.a=a end
 function methods:IsShown() return self.shown end
 function methods:SetShown(v) if v then self:Show() else self:Hide() end end
 function methods:SetScale(n) self.scale=n end
@@ -239,6 +242,7 @@ assert(panel.badges[1].text:find(NS.L.ACH1,1,true))
 assert(panel.settings.fontButton.text:find(NS.L.FONT,1,true))
 print('PASS: locale '..NS.locale..', complete translations, guild byte limits, English aliases')
 assert(loadfile('tests/features.lua'))(NS,ForeverStepsDB,d,panel,sent)
+assert(loadfile('tests/color_picker.lua'))(NS,ForeverStepsDB,d,panel)
 print('PASS: core cases, syntax, UI/event mocks, exclusions, secrets, commands')
 '''
 err=lib.luaL_loadstring(L,code.encode()) or lib.lua_pcallk(L,0,0,0,0,None)
